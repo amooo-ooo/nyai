@@ -14,10 +14,11 @@ from typing import (
 )
 
 from ..utils import to_lmc, to_send
+from ..client import AsyncClient
 
 class AsyncLLM(AsyncChat):
     def __init__(self, 
-                client: Any,
+                client: AsyncClient,
                 remember: bool = None,
                 model: str = None,
                 messages: List[dict] = None,
@@ -99,7 +100,7 @@ class AsyncLLM(AsyncChat):
             messages=map(to_send, [system or self.system] + (messages or self.messages) + [message]),
             **kwargs
         )
-        content = response.choices[0].message.content   
+        content = (await response).choices[0].message.content   
         if remember:
             self.messages += [message, to_lmc(content, role="assistant")]
             if lmc_output:
@@ -139,7 +140,7 @@ class AsyncLLM(AsyncChat):
         if system:
             system = to_send(system or self.system, role="system")
         
-        response = self.completions.create(
+        response = await self.completions.create(
             model=model or self.model,
             messages=map(to_send, [system or self.system] + (messages or self.messages) + [message]),
             stream=True,

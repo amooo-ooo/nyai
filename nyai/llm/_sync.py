@@ -14,10 +14,11 @@ from typing import (
 )
 
 from ..utils import to_lmc, to_send
+from .. import Client
 
 class LLM(Chat):
     def __init__(self, 
-                client: Any,
+                client: Client,
                 remember: bool = None,
                 model: str = None,
                 messages: List[dict] = None,
