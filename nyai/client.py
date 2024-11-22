@@ -11,7 +11,7 @@ from typing import Mapping, Dict
 import httpx
 
 from .providers import Provider, PROVIDERS
-from ._types import NotGiven
+from .types import NotGiven
 import os
             
 class Client(OpenAI):
@@ -57,7 +57,7 @@ class Client(OpenAI):
 class AsyncClient(AsyncOpenAI):
     def __init__(
         self, 
-        provider: Provider | str = None,
+        provider: Provider | str | None = None,
         options: Dict = None,
         api_key: str | None = None, 
         organization: str | None = None, 

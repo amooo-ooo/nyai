@@ -3,26 +3,26 @@ __all__ = [
 ]
 
 from openai.resources import AsyncChat
-from openai._types import NOT_GIVEN, NotGiven
+from openai.types.chat.chat_completion import ChatCompletion
 
 from typing import (
     List, 
     Dict, 
-    Any, 
-    Iterable, 
-    Optional
+    Any,
+    Optional,
+    AsyncGenerator
 )
 
 from ..utils import to_lmc, to_send
-from ..client import AsyncClient
+from .. import AsyncClient
 
 class AsyncLLM(AsyncChat):
     def __init__(self, 
                 client: AsyncClient,
-                remember: bool = None,
-                model: str = None,
-                messages: List[dict] = None,
-                system: str = None): 
+                remember: bool | None = None,
+                model: str | None = None,
+                messages: List[Dict[str, str]] | None = None,
+                system: str | None = None): 
         super().__init__(client)
         self.remember = remember or True
         self.messages = messages or []
@@ -30,9 +30,9 @@ class AsyncLLM(AsyncChat):
         self.model = model
         
     async def chat(self,
-                   message: Dict[str, List[Any] | str] | str,
+                   message: Dict[str, str | List[str | Any] | None] | str,
                    messages: Optional[List[Dict[str, str | Any]]] = None, 
-                   system: Optional[str] = None,
+                   system: Optional[str | Dict[str, str | List[Dict[str, str]]]] = None,
                    model: Optional[str] = None,
                    lmc: bool = False,
                    lmc_input: bool = False,
@@ -40,14 +40,13 @@ class AsyncLLM(AsyncChat):
                    raw: bool = False,
                    role: str = "user", 
                    author: Optional[str] = None,
-                   attachments: Optional[Iterable[str] | str] = None,
-                   attachments_type: Optional[Iterable[str] | str] = None,
+                   attachments: Optional[List[str] | str] = None,
+                   attachments_type: Optional[List[str] | str] = None,
                    stream: bool = False,
-                   max_tokens: Optional[int] = NotGiven,
+                   max_tokens: Optional[int] | None = None,
                    remember: bool = True, 
-                   schema: Optional[Dict[str, Any]] = None,
-                   **kwargs
-                   ) -> str | Dict[str, str | List[Dict[str, str]]]:
+                   **kwargs: Any
+                   ) -> str | Dict[str, str | List[str | Any] | None] | Dict[str, str] | AsyncGenerator[dict[str, str | List[str] | None] | Any] | ChatCompletion:
         """
         Calls the chat model with the provided parameters.
 
@@ -74,16 +73,22 @@ class AsyncLLM(AsyncChat):
             str | Dict[str, str | List[Dict[str, str]]]: The content response from the model, optionally in LMC format or raw.
         """
         lmc_input, lmc_output = (True, True) if lmc else (lmc_input, lmc_output)
-        message = message if lmc_input else to_lmc(message, 
-                                                   attachments=attachments, 
-                                                   attachments_type=attachments_type,
-                                                   role=role,
-                                                   author=author)
+        
+        if lmc_input or isinstance(message, dict):
+            message = to_lmc(
+                message, 
+                attachments=attachments, 
+                attachments_type=attachments_type,
+                role=role,
+                author=author
+            )
+
         if not (model or self.model):
             raise ValueError("Model param is missin")
         
-        if system:
-            system = to_send(system or self.system, role="system")
+        if system and isinstance(system, str):
+            system = to_send(system or self.system, 
+                             role="system")
         
         if stream:
             return self.stream(message=message,
@@ -95,12 +100,13 @@ class AsyncLLM(AsyncChat):
                                raw=raw,
                                system=system)
 
-        response = self.completions.create(
+        response = await self.completions.create(
             model=model or self.model,
             messages=map(to_send, [system or self.system] + (messages or self.messages) + [message]),
             **kwargs
         )
-        content = (await response).choices[0].message.content   
+        
+        content = response.choices[0].message.content
         if remember:
             self.messages += [message, to_lmc(content, role="assistant")]
             if lmc_output:
@@ -112,21 +118,20 @@ class AsyncLLM(AsyncChat):
         return content
     
     async def stream(self,
-               message: Dict[str, List[Any] | str] | str,
-               messages: Optional[List[Dict[str, str | Any]]] = None, 
-               system: Optional[str] = None,
-               model: Optional[str] = None,
-               lmc: bool = False,
-               lmc_input: bool = False,
-               lmc_output: bool = False,
-               raw: bool = False,
-               role: str = "user", 
-               author: Optional[str] = None,
-               attachments: Optional[Iterable[str] | str] = None,
-               attachments_type: Optional[Iterable[str] | str] = None,
-               max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-               remember: bool = True,
-               **kwargs):
+                    message: Dict[str, str | List[str | Any] | None] | str,
+                    messages: Optional[List[Dict[str, str | Any]]] = None, 
+                    system: Optional[str] = None,
+                    model: Optional[str] = None,
+                    lmc: bool = False,
+                    lmc_input: bool = False,
+                    lmc_output: bool = False,
+                    raw: bool = False,
+                    role: str = "user", 
+                    author: Optional[str] = None,
+                    attachments: Optional[List[str] | str] = None,
+                    attachments_type: Optional[List[str] | str] = None,
+                    remember: bool = True,
+                    **kwargs: Any) -> AsyncGenerator[dict[str, str | List[str] | None] | Any]:
         
         lmc_input, lmc_output = (True, True) if lmc else (lmc_input, lmc_output)
         message = message if lmc_input else to_lmc(message, 
@@ -162,3 +167,4 @@ class AsyncLLM(AsyncChat):
                  
         if remember:
             self.messages.append(to_lmc(completion, role="assistant"))
+

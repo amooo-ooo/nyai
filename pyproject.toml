@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "nyai"
-version = "0.0.1"
+version = "0.0.2"
 description = "AI that works out of the box."
 authors = ["amoooooo <amor.budiyanto2006@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.12"
 openai = "^1.52.2"
 
 [build-system]

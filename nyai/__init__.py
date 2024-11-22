@@ -11,18 +11,18 @@ from typing import Mapping, Dict
 import httpx
 
 from .providers import Provider, PROVIDERS
-from ._types import NotGiven
+from .types import NotGiven
 import os
             
 class Client(OpenAI):
     def __init__(
         self, 
-        provider: Provider | str = None,
-        options: Dict = None,
-        api_key: str | None = None, 
+        provider: Provider | str | None = None,
+        api_key: str | None = None,
+        options: Dict[str, Any] | None = None,
+        base_url: str | httpx.URL | None = None,
         organization: str | None = None, 
         project: str | None = None, 
-        base_url: str | httpx.URL | None = None, 
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN, 
         max_retries: int = DEFAULT_MAX_RETRIES, 
         default_headers: Mapping[str, str] | None = None, 
@@ -57,12 +57,12 @@ class Client(OpenAI):
 class AsyncClient(AsyncOpenAI):
     def __init__(
         self, 
-        provider: Provider | str = None,
-        options: Dict = None,
-        api_key: str | None = None, 
+        provider: Provider | str | None = None,
+        api_key: str | None = None,
+        options: Dict[str, Any] | None = None,
+        base_url: str | httpx.URL | None = None,
         organization: str | None = None, 
         project: str | None = None, 
-        base_url: str | httpx.URL | None = None, 
         timeout: float | Timeout | None | NotGiven = NOT_GIVEN, 
         max_retries: int = DEFAULT_MAX_RETRIES, 
         default_headers: Mapping[str, str] | None = None, 
